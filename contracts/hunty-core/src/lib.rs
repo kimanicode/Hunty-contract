@@ -425,7 +425,7 @@ impl HuntyCore {
     }
 
     pub fn get_hunt_info(env: Env, hunt_id: u64) -> Result<Hunt, HuntErrorCode> {
-        let hunt = Storage::get_hunt(&env, hunt_id).ok_or(HuntErrorCode::HuntNotFound)?;
+        let mut hunt = Storage::get_hunt(&env, hunt_id).ok_or(HuntErrorCode::HuntNotFound)?;
 
         match hunt.status {
             HuntStatus::Draft
@@ -434,8 +434,28 @@ impl HuntyCore {
             | HuntStatus::Cancelled => {}
         }
 
+        Self::sync_reward_pool_balance(&env, hunt_id, &mut hunt);
+
         // Return the full Hunt struct
         Ok(hunt)
+    }
+
+    fn sync_reward_pool_balance(env: &Env, hunt_id: u64, hunt: &mut Hunt) {
+        if let Some(reward_manager_addr) = Storage::get_reward_manager(env) {
+            let mut balance_args: Vec<Val> = Vec::new(env);
+            balance_args.push_back(hunt_id.into_val(env));
+
+            if let Ok(Ok(pool_balance)) = env.try_invoke_contract::<i128, RewardErrorCode>(
+                &reward_manager_addr,
+                &Symbol::new(env, "get_pool_balance"),
+                balance_args,
+            ) {
+                if hunt.reward_config.xlm_pool != pool_balance {
+                    hunt.reward_config.xlm_pool = pool_balance;
+                    Storage::save_hunt(env, hunt);
+                }
+            }
+        }
     }
 
     /// Sets the RewardManager contract address for cross-contract reward distribution.
@@ -503,6 +523,7 @@ impl HuntyCore {
         player: Address,
     ) -> Result<(), HuntErrorCode> {
         let mut hunt = Storage::get_hunt_or_error(env, hunt_id).map_err(HuntErrorCode::from)?;
+        Self::sync_reward_pool_balance(env, hunt_id, &mut hunt);
 
         if hunt.status != HuntStatus::Active {
             return Err(HuntErrorCode::InvalidHuntStatus);
