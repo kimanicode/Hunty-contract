@@ -61,8 +61,6 @@ pub struct NftData {
     pub nft_id: u64,
     pub hunt_id: u64,
     pub owner: Address,
-    /// Player who completed the hunt (preserved after transfers).
-    pub completion_player: Address,
     pub metadata: NftMetadata,
     pub transferable: bool,
     pub minted_at: u64,
@@ -192,7 +190,6 @@ impl NftReward {
             nft_id,
             hunt_id,
             owner: player_address.clone(),
-            completion_player: player_address.clone(),
             metadata: metadata.clone(),
             transferable: false,
             minted_at,
@@ -306,7 +303,32 @@ impl NftReward {
             royalty_bps,
         };
 
-        Self::mint_reward_nft(env, minter, hunt_id, player_address, meta)
+        let minted_at = env.ledger().timestamp();
+        let nft_id = Storage::next_nft_id(&env);
+
+        let nft_data = NftData {
+            nft_id,
+            hunt_id,
+            owner: player_address.clone(),
+            metadata: meta.clone(),
+            transferable,
+            minted_at,
+        };
+
+        Storage::save_nft(&env, &nft_data);
+        Storage::add_nft_to_owner(&env, &player_address, nft_id);
+
+        let event = NftMintedEvent {
+            nft_id,
+            hunt_id,
+            owner: player_address,
+            metadata: meta,
+            minted_at,
+        };
+        env.events()
+            .publish((Symbol::new(&env, "NftMinted"), nft_id), event);
+
+        nft_id
     }
 
     /// Retrieves NFT data by ID.
@@ -322,7 +344,7 @@ impl NftReward {
             hunt_id: nft.hunt_id,
             hunt_title: nft.metadata.hunt_title.clone(),
             completion_timestamp: nft.minted_at,
-            completion_player: nft.completion_player.clone(),
+            completion_player: nft.owner.clone(),
             current_owner: nft.owner.clone(),
             title: nft.metadata.title.clone(),
             description: nft.metadata.description.clone(),
