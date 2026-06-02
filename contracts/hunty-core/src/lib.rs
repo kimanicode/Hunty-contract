@@ -1,4 +1,6 @@
 #![no_std]
+extern crate alloc;
+use alloc::string::String as StdString;
 use crate::errors::{HuntError, HuntErrorCode};
 use crate::storage::Storage;
 use crate::types::{
@@ -297,7 +299,7 @@ impl HuntyCore {
         out
     }
 
-    /// Normalizes answer (trim, lowercase) and returns SHA256 hash as BytesN<32>.
+    /// Normalizes answer (trim, Unicode lowercase) and returns SHA256 hash as BytesN<32>.
     fn normalize_and_hash_answer(env: &Env, answer: &String) -> Result<BytesN<32>, HuntError> {
         let n = answer.len();
         if n == 0 {
@@ -319,13 +321,13 @@ impl HuntyCore {
         if start >= end {
             return Err(HuntError::InvalidAnswer);
         }
-        for i in start..end {
-            let b = buf[i];
-            if b >= b'A' && b <= b'Z' {
-                buf[i] = b + (b'a' - b'A');
-            }
+        let slice = &buf[start..end];
+        let text = core::str::from_utf8(slice).map_err(|_| HuntError::InvalidAnswer)?;
+        let normalized = text.to_lowercase();
+        if normalized.is_empty() {
+            return Err(HuntError::InvalidAnswer);
         }
-        let normalized = Bytes::from_slice(env, &buf[start..end]);
+        let normalized = Bytes::from_slice(env, normalized.as_bytes());
         let hash = env.crypto().sha256(&normalized);
         Ok(hash.to_bytes())
     }
