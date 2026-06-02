@@ -471,6 +471,163 @@ mod test {
         assert!(current_time - hunt.created_at < 10);
     }
 
+    #[test]
+    fn test_create_hunt_from_template_copies_completed_hunt_clues() {
+        let env = Env::default();
+        env.ledger().set_timestamp(1_700_000_000);
+        let contract_id = env.register_contract(None, HuntyCore);
+
+        let template_creator = Address::generate(&env);
+        let new_creator = Address::generate(&env);
+        let player = Address::generate(&env);
+        let title = String::from_str(&env, "Template Hunt");
+        let description = String::from_str(&env, "Completed hunt used as a template");
+        let cloned_title = String::from_str(&env, "Remixed Hunt");
+        let cloned_description = String::from_str(&env, "Fresh draft from template");
+        let q1 = String::from_str(&env, "What is 2 + 2?");
+        let q2 = String::from_str(&env, "What is 3 + 3?");
+        let a1 = String::from_str(&env, "four");
+        let a2 = String::from_str(&env, "six");
+
+        let template_hunt_id = as_core_contract(&env, &contract_id, |env| {
+            HuntyCore::create_hunt(
+                env.clone(),
+                template_creator.clone(),
+                title,
+                description,
+                None,
+                None,
+            )
+            .unwrap()
+        });
+
+        let mut template_hunt = as_core_contract(&env, &contract_id, |env| {
+            Storage::get_hunt(env, template_hunt_id).unwrap()
+        });
+        template_hunt.reward_config = crate::types::RewardConfig::new(0, false, None, 1, 0, 0);
+        as_core_contract(&env, &contract_id, |env| {
+            Storage::save_hunt(env, &template_hunt);
+        });
+
+        env.mock_all_auths();
+        as_core_contract(&env, &contract_id, |env| {
+            HuntyCore::add_clue(env.clone(), template_hunt_id, q1, a1.clone(), 10, true).unwrap();
+        });
+        env.mock_all_auths();
+        as_core_contract(&env, &contract_id, |env| {
+            HuntyCore::add_clue(env.clone(), template_hunt_id, q2, a2.clone(), 20, false)
+                .unwrap();
+        });
+        env.mock_all_auths();
+        as_core_contract(&env, &contract_id, |env| {
+            HuntyCore::activate_hunt(env.clone(), template_hunt_id, template_creator.clone())
+                .unwrap();
+        });
+        env.mock_all_auths();
+        as_core_contract(&env, &contract_id, |env| {
+            HuntyCore::register_player(env.clone(), template_hunt_id, player.clone()).unwrap();
+        });
+        env.mock_all_auths();
+        as_core_contract(&env, &contract_id, |env| {
+            HuntyCore::submit_answer(
+                env.clone(),
+                template_hunt_id,
+                1,
+                player.clone(),
+                a1.clone(),
+            )
+            .unwrap();
+        });
+        env.mock_all_auths();
+        as_core_contract(&env, &contract_id, |env| {
+            HuntyCore::complete_hunt(env.clone(), template_hunt_id, player.clone()).unwrap();
+        });
+
+        let template_hunt = as_core_contract(&env, &contract_id, |env| {
+            Storage::get_hunt(env, template_hunt_id).unwrap()
+        });
+        let template_clues =
+            as_core_contract(&env, &contract_id, |env| Storage::list_clues_for_hunt(env, template_hunt_id));
+
+        let cloned_hunt_id = as_core_contract(&env, &contract_id, |env| {
+            HuntyCore::create_hunt_from_template(
+                env.clone(),
+                template_hunt_id,
+                new_creator.clone(),
+                cloned_title,
+                cloned_description,
+                None,
+                None,
+            )
+            .unwrap()
+        });
+
+        let cloned_hunt =
+            as_core_contract(&env, &contract_id, |env| Storage::get_hunt(env, cloned_hunt_id).unwrap());
+        let cloned_clues =
+            as_core_contract(&env, &contract_id, |env| Storage::list_clues_for_hunt(env, cloned_hunt_id));
+
+        assert_eq!(template_hunt.status, HuntStatus::Completed);
+        assert_eq!(cloned_hunt.status, HuntStatus::Draft);
+        assert_eq!(cloned_hunt.creator, new_creator);
+        assert_eq!(cloned_hunt.total_clues, 2);
+        assert_eq!(cloned_hunt.required_clues, 1);
+        assert_eq!(template_clues.len(), cloned_clues.len());
+
+        for i in 0..template_clues.len() {
+            assert_eq!(template_clues.get(i).unwrap(), cloned_clues.get(i).unwrap());
+        }
+    }
+
+    #[test]
+    fn test_create_hunt_from_template_rejects_incomplete_template() {
+        let env = Env::default();
+        env.ledger().set_timestamp(1_700_000_000);
+        let contract_id = env.register_contract(None, HuntyCore);
+
+        let creator = Address::generate(&env);
+        let new_creator = Address::generate(&env);
+        let title = String::from_str(&env, "Template Hunt");
+        let description = String::from_str(&env, "Not completed yet");
+        let q = String::from_str(&env, "Question?");
+        let a = String::from_str(&env, "answer");
+
+        let template_hunt_id = as_core_contract(&env, &contract_id, |env| {
+            HuntyCore::create_hunt(
+                env.clone(),
+                creator.clone(),
+                title,
+                description,
+                None,
+                None,
+            )
+            .unwrap()
+        });
+        env.mock_all_auths();
+        as_core_contract(&env, &contract_id, |env| {
+            HuntyCore::add_clue(env.clone(), template_hunt_id, q, a, 10, true).unwrap();
+        });
+        env.mock_all_auths();
+        as_core_contract(&env, &contract_id, |env| {
+            HuntyCore::activate_hunt(env.clone(), template_hunt_id, creator.clone()).unwrap();
+        });
+
+        let err = as_core_contract(&env, &contract_id, |env| {
+            HuntyCore::create_hunt_from_template(
+                env.clone(),
+                template_hunt_id,
+                new_creator,
+                String::from_str(env, "Cloned"),
+                String::from_str(env, "Draft from template"),
+                None,
+                None,
+            )
+            .unwrap_err()
+        });
+
+        assert_eq!(err, HuntErrorCode::InvalidHuntStatus);
+    }
+
     // ========== add_clue() / get_clue() / list_clues() Tests ==========
 
     #[test]
