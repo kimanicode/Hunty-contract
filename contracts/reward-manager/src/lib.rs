@@ -455,13 +455,11 @@ impl RewardManager {
             .publish((symbol_short!("RWD_DIST"), hunt_id), event);
 
         Ok(())
-
+    }
 
     /// Returns the total XLM distributed across all hunts (protocol-level metric).
     pub fn get_total_xlm_distributed(env: Env) -> i128 {
         Storage::get_total_xlm_distributed(&env)
-    }
-        Ok(())
     }
 
     /// Legacy entry point for XLM-only distribution.
