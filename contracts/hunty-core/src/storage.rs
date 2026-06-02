@@ -414,16 +414,16 @@ impl Storage {
         next
     }
 
-    /// Gets the current clue counter for a hunt without incrementing.
+    /// Gets the current number of indexed clues for a hunt.
     ///
     /// # Arguments
     /// * `env` - The Soroban environment
     /// * `hunt_id` - The hunt to get the clue count for
     ///
     /// # Returns
-    /// The number of clues added so far for the hunt (0 if none)
+    /// The number of clues currently stored for the hunt (0 if none)
     pub fn get_clue_counter(env: &Env, hunt_id: u64) -> u32 {
-        let key = Self::clue_counter_key(hunt_id);
+        let key = Self::clue_list_count_key(hunt_id);
         env.storage().instance().get(&key).unwrap_or(0)
     }
 
