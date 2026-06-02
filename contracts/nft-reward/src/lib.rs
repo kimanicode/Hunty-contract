@@ -308,6 +308,33 @@ impl NftReward {
         Storage::get_owner_nfts(&env, &owner)
     }
 
+    /// Burns (permanently destroys) an NFT, removing it from storage and the owner's list.
+    ///
+    /// # Authorization
+    /// The `owner` must authorize this call. The caller must also be the current owner.
+    pub fn burn(
+        env: Env,
+        nft_id: u64,
+        owner: Address,
+    ) -> Result<(), crate::errors::NftErrorCode> {
+        owner.require_auth();
+
+        let nft = Storage::get_nft(&env, nft_id)
+            .ok_or(crate::errors::NftErrorCode::NftNotFound)?;
+
+        if nft.owner != owner {
+            return Err(crate::errors::NftErrorCode::NotOwner);
+        }
+
+        Storage::remove_nft(&env, nft_id);
+        Storage::remove_nft_from_owner(&env, &owner, nft_id);
+
+        env.events()
+            .publish((Symbol::new(&env, "NftBurned"), nft_id), (nft_id, owner));
+
+        Ok(())
+    }
+
     /// Transfers an NFT from one address to another.
     ///
     /// # Arguments

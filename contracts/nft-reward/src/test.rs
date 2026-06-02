@@ -448,3 +448,47 @@ fn test_get_nft_owner_matches_owner_of() {
     assert_eq!(client.owner_of(&nft_id), client.get_nft_owner(&nft_id));
     assert_eq!(client.get_nft_owner(&nft_id), Some(player));
 }
+
+#[test]
+fn test_burn_removes_nft_and_clears_owner_list() {
+    let env = setup_env();
+    let client = NftRewardClient::new(&env, &env.register_contract(None, NftReward));
+
+    let owner = Address::generate(&env);
+    let metadata = create_metadata(&env, "Burn Me", "Desc", "ipfs://burn");
+
+    let nft_id = client.mint_reward_nft(&1, &owner, &metadata);
+    assert!(client.get_nft(&nft_id).is_some());
+
+    client.burn(&nft_id, &owner).unwrap();
+
+    assert!(client.get_nft(&nft_id).is_none());
+    assert_eq!(client.get_player_nfts(&owner).len(), 0);
+}
+
+#[test]
+fn test_burn_fails_if_not_owner() {
+    let env = setup_env();
+    let client = NftRewardClient::new(&env, &env.register_contract(None, NftReward));
+
+    let owner = Address::generate(&env);
+    let other = Address::generate(&env);
+    let metadata = create_metadata(&env, "Not Yours", "Desc", "ipfs://notyours");
+
+    let nft_id = client.mint_reward_nft(&1, &owner, &metadata);
+
+    let result = client.try_burn(&nft_id, &other);
+    assert!(result.is_err());
+    // NFT must still exist
+    assert!(client.get_nft(&nft_id).is_some());
+}
+
+#[test]
+fn test_burn_fails_for_nonexistent_nft() {
+    let env = setup_env();
+    let client = NftRewardClient::new(&env, &env.register_contract(None, NftReward));
+
+    let owner = Address::generate(&env);
+    let result = client.try_burn(&999u64, &owner);
+    assert!(result.is_err());
+}
