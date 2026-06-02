@@ -708,7 +708,7 @@ impl HuntyCore {
             return Err(HuntErrorCode::InvalidAnswer);
         }
 
-        progress.complete_clue(&env, clue_id, clue.points);
+        progress.complete_clue(&env, clue_id, clue.points, clue.is_required);
 
         let all_required_completed =
             Self::check_all_required_clues_completed(&env, hunt_id, &progress);
