@@ -10,12 +10,12 @@ mod test {
     // Bring Soroban testutils traits into scope (generate addresses, set ledger info, register contracts).
     use crate::errors::{HuntError, HuntErrorCode};
     use crate::storage::Storage;
-    use crate::types::{HuntStatus, RewardClaimFailedEvent};
+    use crate::types::{HuntCancelledEvent, HuntStatus};
     use crate::HuntyCore;
     use nft_reward::{NftMetadata, NftReward};
     use reward_manager::RewardManager;
     use soroban_sdk::testutils::{Address as _, Events as _, Ledger as _, Register as _};
-    use soroban_sdk::{token, String as SorobanString};
+    use soroban_sdk::{token, String as SorobanString, Symbol, TryFromVal, Val};
 
     /// Runs a closure inside a registered HuntyCore contract context so storage is accessible.
     fn with_core_contract<T>(env: &Env, f: impl FnOnce(&Env, &Address) -> T) -> T {
@@ -2042,6 +2042,55 @@ mod test {
 
             let hunt = Storage::get_hunt(env, hunt_id).unwrap();
             assert_eq!(hunt.status, HuntStatus::Cancelled);
+        });
+    }
+
+    #[test]
+    fn test_cancel_hunt_emits_canceller_and_timestamp() {
+        let env = Env::default();
+        let cancelled_at = 1_700_000_123;
+        env.ledger().set_timestamp(cancelled_at);
+        env.mock_all_auths();
+
+        let creator = Address::generate(&env);
+        let question = String::from_str(&env, "Valid question");
+        let answer = String::from_str(&env, "a");
+
+        with_core_contract(&env, |env, cid| {
+            let hunt_id = HuntyCore::create_hunt(
+                env.clone(),
+                creator.clone(),
+                String::from_str(env, "Test Hunt"),
+                String::from_str(env, "Test description"),
+                None,
+                None,
+            )
+            .unwrap();
+
+            HuntyCore::add_clue(env.clone(), hunt_id, question, answer, 1, true).unwrap();
+            HuntyCore::activate_hunt(env.clone(), hunt_id, creator.clone()).unwrap();
+            HuntyCore::cancel_hunt(env.clone(), hunt_id, creator.clone()).unwrap();
+
+            let events = env.events().all();
+            let (contract, topics, data): (Address, Vec<Val>, Val) =
+                events.get(events.len() - 1).unwrap();
+            assert_eq!(contract, cid.clone().into());
+            assert_eq!(topics.len(), 2);
+            assert_eq!(
+                Symbol::try_from_val(env, &topics.get(0).unwrap()).unwrap(),
+                Symbol::new(env, "HuntCancelled")
+            );
+            assert_eq!(u64::try_from_val(env, &topics.get(1).unwrap()).unwrap(), hunt_id);
+
+            let event = HuntCancelledEvent::try_from_val(env, &data).unwrap();
+            assert_eq!(
+                event,
+                HuntCancelledEvent {
+                    hunt_id,
+                    cancelled_by: creator.clone(),
+                    cancelled_at,
+                }
+            );
         });
     }
 

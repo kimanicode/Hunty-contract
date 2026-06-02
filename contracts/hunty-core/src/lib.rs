@@ -625,7 +625,11 @@ impl HuntyCore {
         Storage::save_hunt(&env, &hunt);
 
         // Emit event
-        let event = HuntCancelledEvent { hunt_id };
+        let event = HuntCancelledEvent {
+            hunt_id,
+            cancelled_by: caller,
+            cancelled_at: env.ledger().timestamp(),
+        };
 
         env.events()
             .publish((Symbol::new(&env, "HuntCancelled"), hunt_id), event);

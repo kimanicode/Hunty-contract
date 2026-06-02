@@ -120,7 +120,7 @@
                               "symbol": "hunt_title"
                             },
                             "val": {
-                              "string": "Event Test"
+                              "string": "Indexed Hunt"
                             }
                           },
                           {
@@ -136,7 +136,7 @@
                               "symbol": "rarity"
                             },
                             "val": {
-                              "u32": 0
+                              "u32": 4
                             }
                           },
                           {
@@ -144,7 +144,7 @@
                               "symbol": "tier"
                             },
                             "val": {
-                              "u32": 0
+                              "u32": 2
                             }
                           },
                           {
@@ -340,7 +340,7 @@
                           "symbol": "hunt_title"
                         },
                         "val": {
-                          "string": "Event Test"
+                          "string": "Indexed Hunt"
                         }
                       },
                       {
@@ -356,7 +356,7 @@
                           "symbol": "rarity"
                         },
                         "val": {
-                          "u32": 0
+                          "u32": 4
                         }
                       },
                       {
@@ -364,7 +364,7 @@
                           "symbol": "tier"
                         },
                         "val": {
-                          "u32": 0
+                          "u32": 2
                         }
                       },
                       {
@@ -400,6 +400,22 @@
                   },
                   "val": {
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "rarity"
+                  },
+                  "val": {
+                    "u32": 4
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "tier"
+                  },
+                  "val": {
+                    "u32": 2
                   }
                 }
               ]

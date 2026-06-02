@@ -604,6 +604,22 @@
               "map": [
                 {
                   "key": {
+                    "symbol": "cancelled_at"
+                  },
+                  "val": {
+                    "u64": 1700000000
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "cancelled_by"
+                  },
+                  "val": {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                  }
+                },
+                {
+                  "key": {
                     "symbol": "hunt_id"
                   },
                   "val": {

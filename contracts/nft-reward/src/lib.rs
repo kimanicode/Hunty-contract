@@ -74,6 +74,8 @@ pub struct NftMintedEvent {
     pub nft_id: u64,
     pub hunt_id: u64,
     pub owner: Address,
+    pub rarity: u32,
+    pub tier: u32,
     pub metadata: NftMetadata,
     pub minted_at: u64,
 }
@@ -203,6 +205,8 @@ impl NftReward {
             nft_id,
             hunt_id,
             owner: player_address,
+            rarity: metadata.rarity,
+            tier: metadata.tier,
             metadata,
             minted_at,
         };

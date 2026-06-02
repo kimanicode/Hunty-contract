@@ -69,9 +69,11 @@ pub struct ClueInfo {
 }
 
 #[contracttype]
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HuntCancelledEvent {
     pub hunt_id: u64,
+    pub cancelled_by: Address,
+    pub cancelled_at: u64,
 }
 
 #[contracttype]

@@ -1,7 +1,7 @@
 #![cfg(test)]
 extern crate std;
 
-use crate::{NftMetadata, NftReward, NftRewardClient};
+use crate::{NftMetadata, NftMintedEvent, NftReward, NftRewardClient};
 use soroban_sdk::{
     testutils::{Address as _, Events as _, Ledger as _},
     Address, Env, IntoVal, Map, String, Symbol, Val,
@@ -187,15 +187,39 @@ fn test_nft_minted_event() {
     let client = NftRewardClient::new(&env, &env.register_contract(None, NftReward));
 
     let player = Address::generate(&env);
-    let metadata = create_metadata(&env, "Event Test", "Event desc", "ipfs://event");
+    let metadata = create_metadata_full(
+        &env,
+        "Event Test",
+        "Event desc",
+        "ipfs://event",
+        "Indexed Hunt",
+        4,
+        2,
+    );
 
-    let _nft_id = client.mint_reward_nft(&player, &7, &player, &metadata);
+    let nft_id = client.mint_reward_nft(&7, &player, &metadata);
 
     let events = env.events().all();
     assert!(!events.is_empty());
     // Last event should be NftMinted
-    let (_contract, topics, _data) = events.get(events.len() - 1).unwrap();
+    let (_contract, topics, data): (Address, Vec<Val>, Val) =
+        events.get(events.len() - 1).unwrap();
     assert_eq!(topics.len(), 2); // "NftMinted" + nft_id
+    assert_eq!(
+        Symbol::try_from_val(&env, &topics.get(0).unwrap()).unwrap(),
+        Symbol::new(&env, "NftMinted")
+    );
+    assert_eq!(u64::try_from_val(&env, &topics.get(1).unwrap()).unwrap(), nft_id);
+
+    let event = NftMintedEvent::try_from_val(&env, &data).unwrap();
+    assert_eq!(event.nft_id, nft_id);
+    assert_eq!(event.hunt_id, 7);
+    assert_eq!(event.owner, player);
+    assert_eq!(event.rarity, 4);
+    assert_eq!(event.tier, 2);
+    assert_eq!(event.metadata.rarity, 4);
+    assert_eq!(event.metadata.tier, 2);
+    assert_eq!(event.minted_at, 1000);
 }
 
 #[test]

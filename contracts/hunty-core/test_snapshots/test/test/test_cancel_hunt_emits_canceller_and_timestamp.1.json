@@ -1,6 +1,6 @@
 {
   "generators": {
-    "address": 3,
+    "address": 2,
     "nonce": 0
   },
   "auth": [
@@ -11,7 +11,7 @@
         {
           "function": {
             "contract_fn": {
-              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
               "function_name": "",
               "args": []
             }
@@ -24,7 +24,7 @@
   "ledger": {
     "protocol_version": 22,
     "sequence_number": 0,
-    "timestamp": 1700000000,
+    "timestamp": 1700000123,
     "network_id": "0000000000000000000000000000000000000000000000000000000000000000",
     "base_reserve": 0,
     "min_persistent_entry_ttl": 4096,
@@ -67,7 +67,7 @@
       [
         {
           "contract_data": {
-            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
             "key": "ledger_key_contract_instance",
             "durability": "persistent"
           }
@@ -78,7 +78,7 @@
             "data": {
               "contract_data": {
                 "ext": "v0",
-                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
                 "key": "ledger_key_contract_instance",
                 "durability": "persistent",
                 "val": {
@@ -177,14 +177,10 @@
                           "map": [
                             {
                               "key": {
-                                "symbol": "answer_hashes"
+                                "symbol": "answer_hash"
                               },
                               "val": {
-                                "vec": [
-                                  {
-                                    "bytes": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-                                  }
-                                ]
+                                "bytes": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
                               }
                             },
                             {
@@ -240,7 +236,7 @@
                                 "symbol": "activated_at"
                               },
                               "val": {
-                                "u64": 1700000000
+                                "u64": 1700000123
                               }
                             },
                             {
@@ -248,7 +244,7 @@
                                 "symbol": "created_at"
                               },
                               "val": {
-                                "u64": 1700000000
+                                "u64": 1700000123
                               }
                             },
                             {
@@ -359,14 +355,6 @@
                             },
                             {
                               "key": {
-                                "symbol": "start_time"
-                              },
-                              "val": {
-                                "u64": 0
-                              }
-                            },
-                            {
-                              "key": {
                                 "symbol": "status"
                               },
                               "val": {
@@ -433,7 +421,7 @@
     {
       "event": {
         "ext": "v0",
-        "contract_id": "0000000000000000000000000000000000000000000000000000000000000003",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000002",
         "type_": "contract",
         "body": {
           "v0": {
@@ -481,7 +469,7 @@
     {
       "event": {
         "ext": "v0",
-        "contract_id": "0000000000000000000000000000000000000000000000000000000000000003",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000002",
         "type_": "contract",
         "body": {
           "v0": {
@@ -537,6 +525,14 @@
                   "val": {
                     "u32": 1
                   }
+                },
+                {
+                  "key": {
+                    "symbol": "question"
+                  },
+                  "val": {
+                    "string": "Valid question"
+                  }
                 }
               ]
             }
@@ -548,7 +544,7 @@
     {
       "event": {
         "ext": "v0",
-        "contract_id": "0000000000000000000000000000000000000000000000000000000000000003",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000002",
         "type_": "contract",
         "body": {
           "v0": {
@@ -567,7 +563,7 @@
                     "symbol": "activated_at"
                   },
                   "val": {
-                    "u64": 1700000000
+                    "u64": 1700000123
                   }
                 },
                 {
@@ -588,7 +584,7 @@
     {
       "event": {
         "ext": "v0",
-        "contract_id": "0000000000000000000000000000000000000000000000000000000000000003",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000002",
         "type_": "contract",
         "body": {
           "v0": {
@@ -607,7 +603,7 @@
                     "symbol": "cancelled_at"
                   },
                   "val": {
-                    "u64": 1700000000
+                    "u64": 1700000123
                   }
                 },
                 {
