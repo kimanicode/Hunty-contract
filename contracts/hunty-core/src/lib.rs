@@ -708,10 +708,10 @@ impl HuntyCore {
             return Err(HuntErrorCode::InvalidAnswer);
         }
 
-        progress.complete_clue(&env, clue_id, clue.points);
+        progress.complete_clue(&env, clue_id, clue.points, clue.is_required);
 
         let all_required_completed =
-            Self::check_all_required_clues_completed(&env, hunt_id, &progress);
+            Self::check_all_required_clues_completed(hunt.required_clues, &progress);
 
         // If all required clues completed, mark hunt as completed for this player
         if all_required_completed && !progress.is_completed {
@@ -756,30 +756,8 @@ impl HuntyCore {
     ///
     /// # Returns
     /// `true` if all required clues are completed, `false` otherwise
-    fn check_all_required_clues_completed(
-        env: &Env,
-        hunt_id: u64,
-        progress: &PlayerProgress,
-    ) -> bool {
-        // Get all clues for the hunt
-        let all_clues = Storage::list_clues_for_hunt(env, hunt_id);
-
-        // Iterate through all clues and check if all required ones are completed
-        for i in 0..all_clues.len() {
-            let clue = all_clues.get(i).unwrap();
-
-            // If this is a required clue
-            if clue.is_required {
-                // Check if player has completed it
-                if !progress.has_completed_clue(clue.clue_id) {
-                    // Found a required clue that's not completed
-                    return false;
-                }
-            }
-        }
-
-        // All required clues are completed
-        true
+    fn check_all_required_clues_completed(required_clue_count: u32, progress: &PlayerProgress) -> bool {
+        progress.required_completed_count >= required_clue_count
     }
 
     /// Returns player progress for a hunt (read-only).
