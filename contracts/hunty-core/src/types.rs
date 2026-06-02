@@ -33,6 +33,7 @@ pub struct Hunt {
     pub status: HuntStatus,
     pub created_at: u64,
     pub activated_at: u64,
+    pub start_time: u64,
     pub end_time: u64,
     pub reward_config: RewardConfig,
     pub total_clues: u32,
@@ -204,7 +205,9 @@ impl PlayerProgress {
 
 impl Hunt {
     pub fn is_active(&self, current_time: u64) -> bool {
-        self.status == HuntStatus::Active && (self.end_time == 0 || current_time < self.end_time)
+        self.status == HuntStatus::Active
+            && (self.start_time == 0 || current_time >= self.start_time)
+            && (self.end_time == 0 || current_time < self.end_time)
     }
 
     pub fn has_rewards_available(&self) -> bool {

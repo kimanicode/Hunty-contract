@@ -58,7 +58,7 @@ impl HuntyCore {
         creator: Address,
         title: String,
         description: String,
-        _start_time: Option<u64>,
+        start_time: Option<u64>,
         end_time: Option<u64>,
     ) -> Result<u64, HuntErrorCode> {
         // Validate creator address - in Soroban, Address is always valid if constructed,
@@ -104,6 +104,7 @@ impl HuntyCore {
             status: HuntStatus::Draft,
             created_at: current_time,
             activated_at: 0, // Will be set when hunt is activated
+            start_time: start_time.unwrap_or(0),
             end_time: end_time.unwrap_or(0),
             reward_config,
             total_clues: 0, // Empty clue list initially
@@ -363,6 +364,10 @@ impl HuntyCore {
         }
 
         let current_time = env.ledger().timestamp();
+        // Enforce configured start_time: cannot activate before start_time
+        if hunt.start_time != 0 && current_time < hunt.start_time {
+            return Err(HuntErrorCode::InvalidHuntStatus);
+        }
         hunt.status = HuntStatus::Active;
         hunt.activated_at = current_time;
 
