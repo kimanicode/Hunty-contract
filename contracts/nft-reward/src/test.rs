@@ -289,6 +289,49 @@ fn test_get_nft_metadata_returns_complete_info() {
 }
 
 #[test]
+fn test_mint_from_map_then_query_metadata() {
+    let env = setup_env();
+    let client = NftRewardClient::new(&env, &env.register_contract(None, NftReward));
+
+    let player = Address::generate(&env);
+
+    let mut metadata_map: Map<Symbol, Val> = Map::new(&env);
+    metadata_map.set(
+        Symbol::new(&env, "title"),
+        String::from_str(&env, "Map Mint Trophy").into_val(&env),
+    );
+    metadata_map.set(
+        Symbol::new(&env, "description"),
+        String::from_str(&env, "Minted via map").into_val(&env),
+    );
+    metadata_map.set(
+        Symbol::new(&env, "image_uri"),
+        String::from_str(&env, "ipfs://mapmint").into_val(&env),
+    );
+    metadata_map.set(
+        Symbol::new(&env, "hunt_title"),
+        String::from_str(&env, "Map Hunt").into_val(&env),
+    );
+    metadata_map.set(Symbol::new(&env, "rarity"), 2u32.into_val(&env));
+    metadata_map.set(Symbol::new(&env, "tier"), 7u32.into_val(&env));
+
+    let nft_id = client.mint_reward_nft_from_map(&7, &player, &metadata_map);
+    let meta = client.get_nft_metadata(&nft_id).unwrap();
+
+    assert_eq!(meta.nft_id, nft_id);
+    assert_eq!(meta.hunt_id, 7);
+    assert_eq!(meta.hunt_title, String::from_str(&env, "Map Hunt"));
+    assert_eq!(meta.completion_timestamp, 1000);
+    assert_eq!(meta.completion_player, player);
+    assert_eq!(meta.current_owner, player);
+    assert_eq!(meta.title, String::from_str(&env, "Map Mint Trophy"));
+    assert_eq!(meta.description, String::from_str(&env, "Minted via map"));
+    assert_eq!(meta.image_uri, String::from_str(&env, "ipfs://mapmint"));
+    assert_eq!(meta.rarity, 2);
+    assert_eq!(meta.tier, 7);
+}
+
+#[test]
 fn test_update_nft_metadata_owner_only() {
     let env = setup_env();
     let client = NftRewardClient::new(&env, &env.register_contract(None, NftReward));
