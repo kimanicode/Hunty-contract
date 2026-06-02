@@ -348,9 +348,15 @@ impl NftReward {
         Storage::get_nft(&env, nft_id).map(|nft| nft.owner)
     }
 
-    /// Returns all NFT IDs owned by an address.
-    pub fn get_player_nfts(env: Env, owner: Address) -> Vec<u64> {
-        Storage::get_owner_nfts(&env, &owner)
+    /// Returns paginated NFT IDs owned by an address.
+    pub fn get_player_nfts(env: Env, owner: Address, offset: u32, limit: u32) -> Vec<u64> {
+        let nfts = Storage::get_owner_nfts(&env, &owner);
+        let len = nfts.len();
+        if offset >= len {
+            return Vec::new(&env);
+        }
+        let end = offset.saturating_add(limit).min(len);
+        nfts.slice(offset..end)
     }
 
     /// Burns (permanently destroys) an NFT, removing it from storage and the owner's list.

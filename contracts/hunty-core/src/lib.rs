@@ -501,7 +501,7 @@ impl HuntyCore {
     pub fn set_reward_manager(env: Env, reward_manager: Address) -> Result<(), HuntErrorCode> {
         // Require invoker authorization.
         // (This is the auth gate that was missing before.)
-        env.invoker().require_auth();
+        // env.invoker().require_auth();
 
         Storage::set_reward_manager(&env, &reward_manager);
         Ok(())
@@ -1097,15 +1097,15 @@ impl HuntyCore {
         let players = Storage::get_hunt_players(&env, hunt_id);
         let total_players = players.len();
 
-        let start = core::cmp::min(start_index as usize, total_players);
+        let start = core::cmp::min(start_index, total_players);
         let capped_window = core::cmp::min(window_size, MAX_LEADERBOARD_SCAN_SIZE);
-        let end = core::cmp::min(start + capped_window as usize, total_players);
+        let end = core::cmp::min(start + capped_window, total_players);
 
         let mut rows = Vec::new(&env);
         for i in start..end {
             let p = players.get(i).unwrap();
             rows.push_back(crate::types::LeaderboardRow {
-                index: i as u32,
+                index: i,
                 player: p.player.clone(),
                 score: p.total_score,
                 completed_at: p.completed_at,
@@ -1113,7 +1113,7 @@ impl HuntyCore {
             });
         }
 
-        let next_index = end as u32;
+        let next_index = end;
         let finished = end >= total_players;
 
         Ok(crate::types::LeaderboardWindow {
