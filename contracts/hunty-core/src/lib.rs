@@ -189,10 +189,10 @@ impl HuntyCore {
         is_required: bool,
     ) -> Result<u32, HuntErrorCode> {
         let hunt = Storage::get_hunt_or_error(&env, hunt_id).map_err(HuntErrorCode::from)?;
+        hunt.creator.require_auth();
         if hunt.status != HuntStatus::Draft {
             return Err(HuntErrorCode::InvalidHuntStatus);
         }
-        hunt.creator.require_auth();
         if Storage::get_clue_counter(&env, hunt_id) >= MAX_CLUES_PER_HUNT {
             return Err(HuntErrorCode::from(HuntError::TooManyClues {
                 hunt_id,
