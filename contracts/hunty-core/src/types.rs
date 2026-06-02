@@ -43,6 +43,7 @@ pub struct Hunt {
     pub reward_config: RewardConfig,
     pub total_clues: u32,
     pub required_clues: u32,
+    pub max_attempts_per_clue: u32,
 }
 
 /// Stored clue with SHA256 answer hashes (supports multiple acceptable answers).
@@ -110,7 +111,7 @@ impl Default for Location {
 #[derive(Clone, Debug)]
 pub struct StoredPlayerProgress {
     pub completed_clues: Vec<u32>,
-    pub required_completed_count: u32,
+    pub clue_attempts: Map<u32, u32>,
     pub total_score: u32,
     pub started_at: u64,
     pub completed_at: u64,
@@ -126,7 +127,7 @@ pub struct PlayerProgress {
     pub player: Address,
     pub hunt_id: u64,
     pub completed_clues: Vec<u32>,
-    pub required_completed_count: u32,
+    pub clue_attempts: Map<u32, u32>,
     pub total_score: u32,
     pub started_at: u64,
     pub completed_at: u64,
@@ -141,7 +142,7 @@ impl PlayerProgress {
             player,
             hunt_id,
             completed_clues: Vec::new(env),
-            required_completed_count: 0,
+            clue_attempts: Map::new(env),
             total_score: 0,
             started_at: current_time,
             completed_at: 0,
@@ -155,7 +156,7 @@ impl PlayerProgress {
     pub fn to_stored(&self) -> StoredPlayerProgress {
         StoredPlayerProgress {
             completed_clues: self.completed_clues.clone(),
-            required_completed_count: self.required_completed_count,
+            clue_attempts: self.clue_attempts.clone(),
             total_score: self.total_score,
             started_at: self.started_at,
             completed_at: self.completed_at,
@@ -171,7 +172,7 @@ impl PlayerProgress {
             player,
             hunt_id,
             completed_clues: stored.completed_clues,
-            required_completed_count: stored.required_completed_count,
+            clue_attempts: stored.clue_attempts,
             total_score: stored.total_score,
             started_at: stored.started_at,
             completed_at: stored.completed_at,
@@ -190,7 +191,16 @@ impl PlayerProgress {
         false
     }
 
-    pub fn complete_clue(&mut self, _env: &Env, clue_id: u32, points: u32, is_required: bool) {
+    pub fn failed_attempts_for_clue(&self, clue_id: u32) -> u32 {
+        self.clue_attempts.get(&clue_id).unwrap_or(0)
+    }
+
+    pub fn record_failed_attempt(&mut self, clue_id: u32) {
+        let current = self.failed_attempts_for_clue(clue_id);
+        self.clue_attempts.set(clue_id, current + 1);
+    }
+
+    pub fn complete_clue(&mut self, _env: &Env, clue_id: u32, points: u32) {
         if !self.has_completed_clue(clue_id) {
             self.completed_clues.push_back(clue_id);
             if is_required {
