@@ -626,6 +626,7 @@ impl HuntyCore {
 
         let progress = PlayerProgress::new(&env, player.clone(), hunt_id, current_time);
         Storage::save_player_progress(&env, &progress);
+        Storage::increment_total_players(&env, hunt_id);
 
         let event = PlayerRegisteredEvent {
             hunt_id,
@@ -713,8 +714,10 @@ impl HuntyCore {
         let all_required_completed =
             Self::check_all_required_clues_completed(&env, hunt_id, &progress);
 
+        let just_completed = all_required_completed && !progress.is_completed;
+
         // If all required clues completed, mark hunt as completed for this player
-        if all_required_completed && !progress.is_completed {
+        if just_completed {
             progress.is_completed = true;
             progress.completed_at = current_time;
 
@@ -732,6 +735,9 @@ impl HuntyCore {
         }
 
         Storage::save_player_progress(&env, &progress);
+        if just_completed {
+            Storage::increment_completed(&env, hunt_id, progress.total_score);
+        }
 
         let clue_completed_event = ClueCompletedEvent {
             hunt_id,
@@ -904,17 +910,8 @@ impl HuntyCore {
         hunt_id: u64,
     ) -> Result<HuntStatistics, HuntErrorCode> {
         let _ = Storage::get_hunt(&env, hunt_id).ok_or(HuntErrorCode::HuntNotFound)?;
-        let players = Storage::get_hunt_players(&env, hunt_id);
-        let total_players = players.len() as u32;
-        let mut completed_count: u32 = 0;
-        let mut total_score_sum: u64 = 0;
-        for i in 0..players.len() {
-            let p = players.get(i).unwrap();
-            if p.is_completed {
-                completed_count += 1;
-            }
-            total_score_sum += p.total_score as u64;
-        }
+        let (total_players, completed_count, total_score_sum) =
+            Storage::get_hunt_stats(&env, hunt_id);
         let completion_rate_percent = if total_players > 0 {
             (completed_count * 100) / total_players
         } else {

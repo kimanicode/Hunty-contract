@@ -19,6 +19,7 @@ impl Storage {
     const HUNT_COUNTER_KEY: soroban_sdk::Symbol = symbol_short!("CNTR");
     const CLUE_COUNTER_KEY: soroban_sdk::Symbol = symbol_short!("CCNT");
     const REWARD_MGR_KEY: soroban_sdk::Symbol = symbol_short!("RWDMGR");
+    const HUNT_STATS_KEY: soroban_sdk::Symbol = symbol_short!("HSTATS");
 
     // ========== Hunt Storage Functions ==========
 
@@ -391,5 +392,37 @@ impl Storage {
 
     pub fn get_reward_manager(env: &Env) -> Option<Address> {
         env.storage().instance().get(&Self::REWARD_MGR_KEY)
+    }
+
+    // ========== Hunt Running Counters ==========
+
+    fn hunt_stats_key(hunt_id: u64) -> (soroban_sdk::Symbol, u64) {
+        (Self::HUNT_STATS_KEY, hunt_id)
+    }
+
+    /// Atomically increments the total_players counter for a hunt.
+    pub fn increment_total_players(env: &Env, hunt_id: u64) {
+        let key = Self::hunt_stats_key(hunt_id);
+        let (total, completed, score): (u32, u32, u64) =
+            env.storage().persistent().get(&key).unwrap_or((0, 0, 0));
+        env.storage()
+            .persistent()
+            .set(&key, &(total + 1, completed, score));
+    }
+
+    /// Atomically increments completed_count and adds `score` to total_score_sum.
+    pub fn increment_completed(env: &Env, hunt_id: u64, score: u32) {
+        let key = Self::hunt_stats_key(hunt_id);
+        let (total, completed, score_sum): (u32, u32, u64) =
+            env.storage().persistent().get(&key).unwrap_or((0, 0, 0));
+        env.storage()
+            .persistent()
+            .set(&key, &(total, completed + 1, score_sum + score as u64));
+    }
+
+    /// Returns (total_players, completed_count, total_score_sum) for a hunt.
+    pub fn get_hunt_stats(env: &Env, hunt_id: u64) -> (u32, u32, u64) {
+        let key = Self::hunt_stats_key(hunt_id);
+        env.storage().persistent().get(&key).unwrap_or((0, 0, 0))
     }
 }
