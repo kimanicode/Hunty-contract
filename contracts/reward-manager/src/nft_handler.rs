@@ -21,6 +21,7 @@ impl NftHandler {
     ///
     /// # Returns
     /// The unique NFT ID of the minted NFT
+    #[allow(clippy::too_many_arguments)]
     pub fn distribute_nft(
         env: &Env,
         nft_contract: &Address,
