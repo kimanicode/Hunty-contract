@@ -126,6 +126,7 @@ impl NftReward {
         admin.require_auth();
         Storage::save_admin(&env, &admin);
         Storage::set_max_supply(&env, max_supply);
+        Storage::set_contract_version(&env, Self::CONTRACT_VERSION);
         Ok(())
     }
 
@@ -545,26 +546,32 @@ impl NftReward {
     ///
     /// # Arguments
     /// * `nft_id` - The NFT to transfer
-    /// * `from_address` - Current owner (must authorize the call)
+    /// * `from_address` - Current owner of the NFT
     /// * `to_address` - New owner
+    /// * `caller` - Address authorizing the transfer (must be owner or approved operator)
     ///
     /// # Authorization
-    /// The `from_address` must authorize this call via `require_auth`.
-    /// For automatic transfers during reward distribution, the contract may be
-    /// the `from_address` when invoked by an authorized party.
+    /// `caller` must authorize this call. `caller` must be either the current owner
+    /// or an operator approved by the owner via `set_operator`.
     pub fn transfer_nft(
         env: Env,
         nft_id: u64,
         from_address: Address,
         to_address: Address,
+        caller: Address,
     ) -> Result<(), crate::errors::NftErrorCode> {
-        from_address.require_auth();
+        caller.require_auth();
 
         let mut nft = Storage::get_nft(&env, nft_id)
             .ok_or(crate::errors::NftErrorCode::NftNotFound)?;
 
         if nft.owner != from_address {
             return Err(crate::errors::NftErrorCode::NotOwner);
+        }
+
+        // caller must be the owner or an approved operator
+        if caller != nft.owner && !Storage::is_operator(&env, &nft.owner, &caller) {
+            return Err(crate::errors::NftErrorCode::NotOperator);
         }
 
         if nft.owner == to_address {
@@ -623,9 +630,40 @@ impl NftReward {
         Ok(())
     }
 
-    /// Returns the contract version.
-    pub fn contract_version() -> u32 {
-        1
+    /// Returns the on-chain version stored during initialize, or the compiled constant.
+    pub fn contract_version(env: Env) -> u32 {
+        Storage::get_contract_version(&env).unwrap_or(Self::CONTRACT_VERSION)
+    }
+
+    /// Grants `operator` the ability to manage all NFTs owned by `owner`.
+    ///
+    /// # Authorization
+    /// `owner` must authorize this call.
+    pub fn set_operator(env: Env, owner: Address, operator: Address) {
+        owner.require_auth();
+        Storage::set_operator(&env, &owner, &operator);
+        env.events().publish(
+            (Symbol::new(&env, "OperatorChanged"), owner.clone()),
+            OperatorChangedEvent { owner, operator, approved: true },
+        );
+    }
+
+    /// Revokes operator approval for `operator` over `owner`'s NFTs.
+    ///
+    /// # Authorization
+    /// `owner` must authorize this call.
+    pub fn remove_operator(env: Env, owner: Address, operator: Address) {
+        owner.require_auth();
+        Storage::remove_operator(&env, &owner, &operator);
+        env.events().publish(
+            (Symbol::new(&env, "OperatorChanged"), owner.clone()),
+            OperatorChangedEvent { owner, operator, approved: false },
+        );
+    }
+
+    /// Returns true if `operator` is approved to manage all NFTs of `owner`.
+    pub fn is_operator(env: Env, owner: Address, operator: Address) -> bool {
+        Storage::is_operator(&env, &owner, &operator)
     }
 
     pub fn get_schema_version(env: Env) -> u32 {

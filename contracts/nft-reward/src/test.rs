@@ -4,7 +4,7 @@ extern crate std;
 use crate::{NftMetadata, NftReward, NftRewardClient};
 use soroban_sdk::{
     testutils::{Address as _, Events as _, Ledger as _},
-    Address, Env, IntoVal, Map, String, Symbol, Val,
+    Address, Env, IntoVal, Map, String, Symbol, Val, Vec,
 };
 
 fn setup_env() -> Env {
@@ -372,7 +372,7 @@ fn test_transfer_nft_success() {
     let nft_id = mint_transferable(&env, &client, 1, &from, &metadata);
     assert_eq!(client.owner_of(&nft_id), Some(from.clone()));
 
-    client.transfer_nft(&nft_id, &from, &to);
+    client.transfer_nft(&nft_id, &from, &to, &from);
 
     assert_eq!(client.owner_of(&nft_id), Some(to.clone()));
     assert_eq!(client.get_nft_owner(&nft_id), Some(to.clone()));
@@ -398,7 +398,7 @@ fn test_transfer_nft_updates_player_nfts() {
     assert_eq!(alice_nfts.len(), 2);
     assert!(alice_nfts.get(0).unwrap() == nft1 || alice_nfts.get(0).unwrap() == nft2);
 
-    client.transfer_nft(&nft1, &alice, &bob);
+    client.transfer_nft(&nft1, &alice, &bob, &alice);
 
     let alice_nfts = client.get_player_nfts(&alice, &0, &100);
     assert_eq!(alice_nfts.len(), 1);
@@ -436,7 +436,7 @@ fn test_transfer_nft_nonexistent() {
     let from = Address::generate(&env);
     let to = Address::generate(&env);
 
-    client.transfer_nft(&999, &from, &to);
+    client.transfer_nft(&999, &from, &to, &from);
 }
 
 #[test]
@@ -453,7 +453,7 @@ fn test_transfer_nft_not_owner() {
     let nft_id = client.mint_reward_nft(&owner, &1, &owner, &metadata);
 
     // Attacker tries to transfer - with mock_all_auths they "auth" but NotOwner check fails
-    client.transfer_nft(&nft_id, &attacker, &to);
+    client.transfer_nft(&nft_id, &attacker, &to, &attacker);
 }
 
 #[test]
@@ -467,7 +467,7 @@ fn test_transfer_nft_invalid_recipient_same_as_from() {
 
     let nft_id = client.mint_reward_nft(&owner, &1, &owner, &metadata);
 
-    client.transfer_nft(&nft_id, &owner, &owner);
+    client.transfer_nft(&nft_id, &owner, &owner, &owner);
 }
 
 #[test]
